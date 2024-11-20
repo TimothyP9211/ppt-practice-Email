@@ -68,7 +68,6 @@ public class PublicT2 {
     public void testTSView1() {
         MailBox inbox = new MailBox();
         setupMailBox(inbox);
-
         List<Email> exp =
             Arrays.asList(thread2_2, thread1_4, thread1_3, thread1_2, thread2_1, thread1_1,
                 thread2_0, thread1_0);

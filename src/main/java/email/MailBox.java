@@ -1,13 +1,19 @@
 package email;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * A datatype that represents a mailbox or collection of email.
  */
 public class MailBox {
     // TODO Implement this datatype
+    Set<Email> emails;
+    Map<Email, Boolean> readStatus;
+
+    public MailBox() {
+        emails = new HashSet<>();
+        readStatus = new HashMap<>();
+    }
 
     /**
      * Add a new message to the mailbox
@@ -18,8 +24,10 @@ public class MailBox {
      * or msg was null)
      */
     public boolean addMsg(Email msg) {
-        // TODO: Implement this method
-        return false;
+        if (emails.contains(msg) || msg == null) {return false;}
+        emails.add(msg);
+        readStatus.put(msg, false);
+        return true;
     }
 
 
@@ -30,8 +38,12 @@ public class MailBox {
      * and null if such an email does not exist in this mailbox
      */
     public Email getMsg(UUID msgID) {
-        // TODO: Implement this method
-        throw new UnsupportedOperationException(); // You should change this!
+        for (Email email : emails) {
+            if (email.getId().equals(msgID)) {
+                return email;
+            }
+        }
+        return null;
     }
 
     /**
@@ -42,7 +54,13 @@ public class MailBox {
      * else return false
      */
     public boolean delMsg(UUID msgId) {
-        // TODO: Implement this method
+        for (Email email : emails) {
+            if (email.getId().equals(msgId)) {
+                emails.remove(email);
+                readStatus.remove(email);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -52,8 +70,7 @@ public class MailBox {
      * @return the number of messages in the mailbox
      */
     public int getMsgCount() {
-        // TODO: Implement this method
-        return -1;
+        return emails.size();
     }
 
     /**
@@ -63,7 +80,12 @@ public class MailBox {
      * @return true if the message exists in the mailbox and false otherwise
      */
     public boolean markRead(UUID msgID) {
-        // TODO: Implement this method
+        for (Email email : emails) {
+            if (email.getId().equals(msgID)) {
+                readStatus.replace(email, true);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -74,7 +96,12 @@ public class MailBox {
      * @return true if the message exists in the mailbox and false otherwise
      */
     public boolean markUnread(UUID msgID) {
-        // TODO: Implement this method
+        for (Email email : emails) {
+            if (email.getId().equals(msgID)) {
+                readStatus.replace(email, false);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -86,8 +113,12 @@ public class MailBox {
      * @throws IllegalArgumentException if the message does not exist in the mailbox
      */
     public boolean isRead(UUID msgID) {
-        // TODO: Implement this method
-        return false;
+        for (Email email : emails) {
+            if (email.getId().equals(msgID)) {
+                return readStatus.get(email);
+            }
+        }
+        throw new IllegalArgumentException();
     }
 
     /**
@@ -95,8 +126,13 @@ public class MailBox {
      * @return the number of unread messages in this mailbox
      */
     public int getUnreadMsgCount() {
-        // TODO: Implement this method
-        return -1;
+        int count = 0;
+        for (Email email : emails) {
+            if (!readStatus.get(email)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -108,8 +144,23 @@ public class MailBox {
      * the same timestamp, the ordering among those messages is arbitrary.
      */
     public List<Email> getTimestampView() {
-        // TODO: Implement this method
-        return null;
+        Set<Email> emailsLeft = new HashSet<>(emails);
+        List<Email> timestampView = new ArrayList<>();
+        int min;
+        Email nextEmail;
+        while (!emailsLeft.isEmpty()) {
+            min = Integer.MIN_VALUE;
+            nextEmail = null;
+            for (Email email : emailsLeft) {
+                if (min < email.getTimestamp()) {
+                    min = email.getTimestamp();
+                    nextEmail = email;
+                }
+            }
+            timestampView.add(nextEmail);
+            emailsLeft.remove(nextEmail);
+        }
+        return timestampView;
     }
 
     /**
@@ -124,8 +175,30 @@ public class MailBox {
      * sorted with the earliest message first and breaking ties arbitrarily
      */
     public List<Email> getMsgsInRange(int startTime, int endTime) {
-        // TODO: Implement this method
-        return null;
+        Set<Email> emailsLeft = new HashSet<>(emails);
+        List<Email> timestampView = new ArrayList<>();
+        int min;
+        Email nextEmail;
+        while (!emailsLeft.isEmpty()) {
+            min = Integer.MAX_VALUE;
+            nextEmail = null;
+            for (Email email : emailsLeft) {
+                if (min > email.getTimestamp()) {
+                    min = email.getTimestamp();
+                    nextEmail = email;
+                }
+            }
+            timestampView.add(nextEmail);
+            emailsLeft.remove(nextEmail);
+        }
+        List<Email> removed = new ArrayList<>();
+        for (Email email : timestampView) {
+            if (email.getTimestamp() < startTime || email.getTimestamp() > endTime) {
+                removed.add(email);
+            }
+        }
+        timestampView.removeAll(removed);
+        return timestampView;
     }
 
 
@@ -137,8 +210,18 @@ public class MailBox {
      * and false otherwise
      */
     public boolean markThreadAsRead(UUID msgID) {
-        // TODO: Implement this method
-        return false;
+        if (msgID == null || !emails.contains(getMsg(msgID))) {return false;}
+        Set<Email> eThread = new HashSet<>();
+        eThread.add(getMsg(msgID));
+        Email next = getMsg(getMsg(msgID).getResponseTo());
+        while (!eThread.contains(next)) {
+            eThread.add(next);
+            next = getMsg(getMsg(msgID).getResponseTo());
+        }
+        for (Email email : eThread) {
+            markRead(email.getId());
+        }
+        return true;
     }
 
     /**
@@ -149,8 +232,18 @@ public class MailBox {
      * and false otherwise
      */
     public boolean markThreadAsUnread(UUID msgID) {
-        // TODO: Implement this method
-        return false;
+        if (msgID == null || !emails.contains(getMsg(msgID))) {return false;}
+        Set<Email> eThread = new HashSet<>();
+        eThread.add(getMsg(msgID));
+        Email next = getMsg(getMsg(msgID).getResponseTo());
+        while (!eThread.contains(next)) {
+            eThread.add(next);
+            next = getMsg(getMsg(msgID).getResponseTo());
+        }
+        for (Email email : eThread) {
+            markUnread(email.getId());
+        }
+        return true;
     }
 
     /**
