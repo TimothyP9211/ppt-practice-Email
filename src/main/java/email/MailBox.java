@@ -314,9 +314,52 @@ public class MailBox {
      * @return a list that represents a thread-based view of the mailbox.
      */
     public List<Email> getThreadedView() {
-        // TODO: Implement this method
-        return null;
+        Set<Email> threadBase = new HashSet<>();
+        Set<Set<Email>> allThreads = new HashSet<>();
+        for (Email email : emails) {
+            if (email.getResponseTo().equals(Email.NO_PARENT_ID)) {
+                threadBase.add(email);
+            }
+        }
+        Set<Email> noBase = new HashSet<>(emails);
+        noBase.removeAll(threadBase);
+        for (Email email : threadBase) {
+            Email next = email;
+            Set<Email> currentThread = new HashSet<>();
+            while (!currentThread.contains(next)) {
+                currentThread.add(next);
+                for (Email nextMail : noBase) {
+                    if (getMsg(nextMail.getResponseTo()).equals(getMsg(next.getId()))) {
+                        next = nextMail;
+                        break;
+                    }
+                }
+            }
+            allThreads.add(currentThread);
+        }
+
+        Set<List<Email>> emailList = new HashSet<>();
+        for (Set<Email> thread : allThreads) {
+            List<Email> t = new ArrayList<>(thread);
+            t.sort(Comparator.comparing(Email::getTimestamp));
+            t = t.reversed();
+            emailList.add(t);
+        }
+
+        List<Email> threadedView = new ArrayList<>();
+        while (!emailList.isEmpty()) {
+            int max = Integer.MIN_VALUE;
+            List<Email> currentList = new ArrayList<>();
+            for (List<Email> t : emailList) {
+                if (t.getFirst().getTimestamp() > max) {
+                    max = t.getFirst().getTimestamp();
+                    currentList = t;
+                }
+            }
+            threadedView.addAll(currentList);
+            emailList.remove(currentList);
+        }
+
+        return threadedView;
     }
-
-
 }
