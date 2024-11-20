@@ -212,11 +212,26 @@ public class MailBox {
     public boolean markThreadAsRead(UUID msgID) {
         if (msgID == null || !emails.contains(getMsg(msgID))) {return false;}
         Set<Email> eThread = new HashSet<>();
-        eThread.add(getMsg(msgID));
-        Email next = getMsg(getMsg(msgID).getResponseTo());
-        while (!eThread.contains(next)) {
-            eThread.add(next);
-            next = getMsg(getMsg(msgID).getResponseTo());
+        Set<Email> threadBase = new HashSet<>();
+        Set<Set<Email>> allThreads = new HashSet<>();
+        for (Email email : emails) {
+            if (email.getResponseTo().equals(Email.NO_PARENT_ID)) {
+                threadBase.add(email);
+            }
+        }
+        for (Email email : threadBase) {
+            Set<Email> currentThread = new HashSet<>();
+            Email next = getMsg(email.getResponseTo());
+            while (next != null) {
+                currentThread.add(next);
+                next = getMsg(next.getResponseTo());
+            }
+            allThreads.add(currentThread);
+        }
+        for (Set<Email> thread : allThreads) {
+            if (thread.contains(getMsg(msgID))) {
+                eThread = thread;
+            }
         }
         for (Email email : eThread) {
             markRead(email.getId());
@@ -234,11 +249,26 @@ public class MailBox {
     public boolean markThreadAsUnread(UUID msgID) {
         if (msgID == null || !emails.contains(getMsg(msgID))) {return false;}
         Set<Email> eThread = new HashSet<>();
-        eThread.add(getMsg(msgID));
-        Email next = getMsg(getMsg(msgID).getResponseTo());
-        while (!eThread.contains(next)) {
-            eThread.add(next);
-            next = getMsg(getMsg(msgID).getResponseTo());
+        Set<Email> threadBase = new HashSet<>();
+        Set<Set<Email>> allThreads = new HashSet<>();
+        for (Email email : emails) {
+            if (email.getResponseTo().equals(Email.NO_PARENT_ID)) {
+                threadBase.add(email);
+            }
+        }
+        for (Email email : threadBase) {
+            Set<Email> currentThread = new HashSet<>();
+            Email next = getMsg(email.getResponseTo());
+            while (next != null) {
+                currentThread.add(next);
+                next = getMsg(next.getResponseTo());
+            }
+            allThreads.add(currentThread);
+        }
+        for (Set<Email> thread : allThreads) {
+            if (thread.contains(getMsg(msgID))) {
+                eThread = thread;
+            }
         }
         for (Email email : eThread) {
             markUnread(email.getId());
