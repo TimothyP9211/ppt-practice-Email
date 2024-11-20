@@ -219,20 +219,30 @@ public class MailBox {
                 threadBase.add(email);
             }
         }
+        Set<Email> noBase = new HashSet<>(emails);
+        noBase.removeAll(threadBase);
         for (Email email : threadBase) {
+            Email next = email;
             Set<Email> currentThread = new HashSet<>();
-            Email next = getMsg(email.getResponseTo());
-            while (next != null) {
+            while (!currentThread.contains(next)) {
                 currentThread.add(next);
-                next = getMsg(next.getResponseTo());
+                for (Email nextMail : noBase) {
+                    if (getMsg(nextMail.getResponseTo()).equals(getMsg(next.getId()))) {
+                        next = nextMail;
+                        break;
+                    }
+                }
             }
             allThreads.add(currentThread);
         }
+
         for (Set<Email> thread : allThreads) {
             if (thread.contains(getMsg(msgID))) {
                 eThread = thread;
+                break;
             }
         }
+
         for (Email email : eThread) {
             markRead(email.getId());
         }
@@ -256,20 +266,30 @@ public class MailBox {
                 threadBase.add(email);
             }
         }
+        Set<Email> noBase = new HashSet<>(emails);
+        noBase.removeAll(threadBase);
         for (Email email : threadBase) {
+            Email next = email;
             Set<Email> currentThread = new HashSet<>();
-            Email next = getMsg(email.getResponseTo());
-            while (next != null) {
+            while (!currentThread.contains(next)) {
                 currentThread.add(next);
-                next = getMsg(next.getResponseTo());
+                for (Email nextMail : noBase) {
+                    if (getMsg(nextMail.getResponseTo()).equals(getMsg(next.getId()))) {
+                        next = nextMail;
+                        break;
+                    }
+                }
             }
             allThreads.add(currentThread);
         }
+
         for (Set<Email> thread : allThreads) {
             if (thread.contains(getMsg(msgID))) {
                 eThread = thread;
+                break;
             }
         }
+
         for (Email email : eThread) {
             markUnread(email.getId());
         }
